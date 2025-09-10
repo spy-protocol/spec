@@ -154,7 +154,7 @@ SPY Protocol is designed for algorithm migration:
 If you discover a security vulnerability:
 
 1. DO NOT open a public issue
-2. Email security@[domain] with details
+2. Email security@spy-protocol.org with details
 3. Include reproduction steps if possible
 4. Allow time for patch before disclosure
 
