@@ -4,24 +4,37 @@
 **Status**: Draft  
 **Last Updated**: January 2025
 
+## About This Document
+
+This document provides an overview of the SPY Protocol specification. For the complete technical specification of the current version, see [versions/1.0.md](versions/1.0.md).
+
 ## Abstract
 
 The SPY (Secure Proxy Authentication) Protocol enables cryptographic authentication between user agents and authenticating proxies to control access to protected resources. This specification defines a lightweight, efficient protocol using elliptic curve cryptography for mutual authentication and session establishment.
 
-## Table of Contents
+## Quick Navigation
 
-1. [Introduction](#introduction)
-2. [Terminology](#terminology)
-3. [Protocol Overview](#protocol-overview)
-4. [Message Specifications](#message-specifications)
-5. [Cryptographic Requirements](#cryptographic-requirements)
-6. [Security Considerations](#security-considerations)
-7. [Implementation Requirements](#implementation-requirements)
-8. [Conformance](#conformance)
+- **[Full v1.0 Specification](versions/1.0.md)** - Complete protocol details
+- **[Security Considerations](SECURITY.md)** - Threat model and mitigations  
+- **[Implementation Guide](CONTRIBUTING.md)** - How to implement SPY
+- **[Change Log](CHANGELOG.md)** - Version history
 
-## Introduction
+## Protocol Overview
 
-SPY Protocol addresses the need for strong, passwordless authentication between clients and proxies while preventing unauthorized automated access to protected resources. The protocol uses established cryptographic standards to ensure security while maintaining simplicity and performance.
+SPY Protocol provides:
+- **Passwordless Authentication** - ECDSA public key cryptography
+- **Bot Protection** - Cryptographic proof of authorized agents
+- **Session Management** - Secure token generation and validation
+- **Enterprise Ready** - Audit logging and policy configuration
+
+### Core Flow
+
+```
+1. Agent → Proxy: SPY_INIT (public key, capabilities)
+2. Proxy → Agent: SPY_CHALLENGE (challenge, requirements)  
+3. Agent → Proxy: SPY_AUTH (signed challenge)
+4. Proxy → Agent: SPY_ACCEPT (session token)
+```
 
 ## Terminology
 
@@ -33,118 +46,81 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 - **Session**: An authenticated connection between agent and proxy
 - **Challenge**: A cryptographic nonce used to prevent replay attacks
 
-## Protocol Overview
+## Implementation Requirements Summary
 
-SPY Protocol uses a four-message handshake:
+### Minimum Requirements (MUST)
 
-1. **SPY_INIT**: Agent announces capabilities and public key
-2. **SPY_CHALLENGE**: Proxy provides authentication challenge
-3. **SPY_AUTH**: Agent proves possession of private key
-4. **SPY_ACCEPT**: Proxy confirms authentication and issues session
+- ECDSA with NIST P-256 curve
+- SHA-256 hashing
+- JSON message encoding
+- Challenge expiry (60 seconds)
+- Timestamp validation (±5 minutes)
 
-After establishment, sessions are maintained through periodic heartbeats.
+### Recommended Features (SHOULD)
 
-## Message Specifications
-
-All messages MUST be encoded as JSON (RFC 7159) with UTF-8 encoding.
-
-### Message Transport
-
-Messages MAY be transported over:
-- HTTPS POST requests to `/spy/v1/{message_type}`
-- WebSocket frames with text payload
-- HTTP/2 or HTTP/3 streams
-
-### Message Structure
-
-Every message MUST contain:
-- `type`: String identifying message type
-- `version`: Protocol version string
-- `timestamp`: ISO 8601 timestamp with timezone
-
-### Detailed Message Formats
-
-See [versions/1.0.md](versions/1.0.md) for complete message specifications.
-
-## Cryptographic Requirements
-
-### Supported Algorithms
-
-Implementations MUST support:
-- **ECDSA** with NIST P-256 (secp256r1)
-- **SHA-256** for hashing
-
-Implementations SHOULD support:
-- **ECDSA** with NIST P-384 (secp384r1)
-- **SHA-384** for hashing
-
-### Key Encoding
-
-Public keys MUST be encoded in:
-- PEM format (RFC 7468) for configuration
-- Base64 (RFC 4648) for transmission
-
-### Randomness
-
-All random values MUST be generated using cryptographically secure random number generators with at least 128 bits of entropy.
-
-## Security Considerations
-
-### Replay Protection
-
-- Challenges MUST be unique and expire after 60 seconds
-- Timestamps MUST be verified within ±5 minutes
-- Session tokens MUST be unguessable (minimum 256 bits entropy)
-
-### Denial of Service
-
-Implementations SHOULD:
-- Rate limit authentication attempts per IP address
-- Implement exponential backoff for failed attempts
-- Limit concurrent pending authentications
-
-### Key Management
-
-- Private keys MUST be stored securely (hardware security module recommended)
-- Public keys SHOULD be rotated periodically
-- Compromised keys MUST be revocable
-
-## Implementation Requirements
-
-### Agent Requirements
-
-Agents MUST:
-- Securely store private keys
-- Validate proxy certificates (for HTTPS transport)
-- Maintain accurate time (NTP recommended)
-- Handle session expiration gracefully
-
-### Proxy Requirements
-
-Proxies MUST:
-- Verify signatures correctly
-- Maintain session state securely
-- Log authentication events for audit
-- Support configurable policies per domain
-
-## Conformance
-
-### Compliance Levels
-
-**Basic Compliance**:
-- Support P-256 ECDSA
-- Implement core message flow
-- 60-second challenge timeout
-
-**Full Compliance**:
-- Support P-256 and P-384
-- Implement heartbeat mechanism
-- Configurable timeouts
+- ECDSA with NIST P-384 curve
+- SHA-384 hashing
 - Rate limiting
+- Heartbeat mechanism
+- Session token rotation
 
-### Testing
+## Message Transport Options
 
-Implementations SHOULD validate against official test vectors in [test-vectors/](test-vectors/).
+SPY messages can be transported over:
+- **HTTPS** - POST to `/spy/v1/{message_type}`
+- **WebSocket** - Text frames with JSON payload
+- **HTTP/2 or HTTP/3** - Streaming with multiplexing
+
+## Conformance Levels
+
+### Basic Compliance
+- Core message flow (INIT, CHALLENGE, AUTH, ACCEPT)
+- P-256 ECDSA support
+- 60-second challenge timeout
+- JSON message format
+
+### Full Compliance  
+- All basic requirements
+- P-384 ECDSA support
+- Heartbeat mechanism
+- Rate limiting
+- Configurable timeouts
+
+## Getting Started
+
+### For Implementers
+
+1. Read the [full v1.0 specification](versions/1.0.md)
+2. Review [security considerations](SECURITY.md)
+3. Implement message handlers for SPY_INIT, SPY_CHALLENGE, SPY_AUTH, SPY_ACCEPT
+4. Add session management and heartbeat support
+5. Validate against test vectors (when available)
+
+### For System Administrators
+
+1. Deploy an SPY-compatible proxy
+2. Configure agent authentication policies
+3. Generate and distribute ECDSA key pairs
+4. Monitor authentication logs
+5. Plan key rotation schedule
+
+## Version History
+
+| Version | Status | Date | Link |
+|---------|--------|------|------|
+| 1.0 | Current | 2025-01 | [Specification](versions/1.0.md) |
+
+Future versions will maintain backward compatibility where possible.
+
+## Contributing
+
+We welcome contributions to improve the SPY Protocol specification. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Security
+
+For security considerations and threat analysis, see [SECURITY.md](SECURITY.md).
+
+Report security issues privately - do not open public issues for vulnerabilities.
 
 ## References
 
@@ -153,10 +129,6 @@ Implementations SHOULD validate against official test vectors in [test-vectors/]
 - RFC 7468: Textual Encodings of PKIX Structures
 - RFC 4648: Base16, Base32, and Base64 Data Encodings
 - NIST SP 800-186: Discrete Logarithm-Based Crypto
-
-## Version History
-
-See [versions/](versions/) for all specification versions.
 
 ## License
 
